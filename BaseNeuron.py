@@ -43,18 +43,21 @@ class BaseNeuron:
 
 
 	"""
-	Decode, assuming no noise.
+	Decode
 	@param A: The neuron activity being decoded, must be array or numpy array.
 	@param X: The original vector.
+	@param sigma: Standard deviation of the noise
+	@param s: Sample steps
 	Returns decoders array D.
 	"""
-	def decodeIdeal(self, A, x):
+	@classmethod
+	def decode(cls, A, X, sigma=0, S=1):
 		A = np.array(A)
 		A_t = A.transpose()
-		D = np.dot(np.linalg.pinv(np.dot(A_t, A)), np.dot(A_t, x))
+		num_neurons = len(A[1,:])
+		gamma = ( (np.dot(A_t, A))/S + (sigma**sigma)*(np.identity(num_neurons)) )
+		D = np.dot(np.linalg.inv(gamma), np.dot(A_t, X)/S)
 		return D
-
-	#def decodeNoisy(A, x, epsilon):
 
 
 

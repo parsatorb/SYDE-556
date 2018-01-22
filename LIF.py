@@ -17,7 +17,7 @@ class LIF(BaseNeuron):
 	"""
 	def model(self, current):
 		#element-wise maximum
-		f = np.vectorize(__modelHelper)
+		f = np.vectorize(self.__modelHelper)
 		return f(current)
 
 
@@ -25,14 +25,20 @@ class LIF(BaseNeuron):
 	Helper for the model function
 	@param j: Must be scalar
 	"""
-	def __modelHelper(j):
-		if j > 1:
+	def __modelHelper(self, j):
+		if j <= 1:
 			return 0
+		return 1./(self._tRef - ( self._tRC*np.log(1 - 1./j) ))
 
-		return 1/(self._tRef - self._tRC*np.log(1 - 1/j))
-
-	def setParams(max_rates, xrange, samplingRate=0.05):
-
+	"""
+	Set gain and bias for a max point xMax, aMax, and an 'x-int'.
+	aMax must be scalar. All other inputs must be array_like of the same dimension 
+	"""
+	def setParams(self, xMax, aMax, xInt):
+		c = np.exp( (self._tRef - (1. / aMax)) / self._tRC ) #just some constant to make the math nicer
+		k = np.dot(xInt, self._e) - 1	#some other constant
+		self._gain = (1 - 1. / (1 - c))/k
+		self._bias = 1 - (self._gain * np.dot(xInt, self._e))
 
 
 
