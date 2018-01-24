@@ -51,12 +51,13 @@ class BaseNeuron:
 	Returns decoders array D.
 	"""
 	@classmethod
-	def decode(cls, A, X, sigma=0, S=1):
+	def decode(cls, A, X, sigma=0):
 		A = np.array(A)
 		A_t = A.transpose()
+		S = np.size(X)
 		num_neurons = len(A[1,:])
-		gamma = ( (np.dot(A_t, A))/S + (sigma*sigma)*(np.identity(num_neurons)) )
-		D = np.dot(np.linalg.inv(gamma), np.dot(A_t, X)/S)
+		gamma = ( np.divide((np.dot(A_t, A)), S) + (sigma*sigma)*(np.identity(num_neurons)) )
+		D = np.dot(np.linalg.inv(gamma), np.divide(np.dot(A_t, X), S))
 		return D
 
 
@@ -70,10 +71,11 @@ class BaseNeuron:
 	"""
 	@classmethod
 	def decodeIdeal(cls, A, X):
-		A = np.array(A)
-		A_t = A.transpose() 
-		D = np.dot(np.linalg.inv(np.dot(A_t, A)), np.dot(A_t, X))
-		return D
+		return np.dot(np.linalg.pinv(np.dot(A.transpose(), A)), np.dot(A.transpose(), X))
+		# A = np.array(A)
+		# A_t = A.transpose() 
+		# D = np.dot(np.linalg.inv(np.dot(A_t, A)), np.dot(A_t, X))
+		# return D
 
 
 
