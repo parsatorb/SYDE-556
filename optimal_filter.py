@@ -105,12 +105,13 @@ if not h_only:
 	pylab.title('Optimal Filter (Freq Domain)')
 	pylab.xlim(-50, 50)
 	
-	pylab.subplot(1,2,2)
-	pylab.plot(t-T/2, h)       #Optimal Filter in time domain
-	pylab.title('Optimal Filter (Time Domain)')
-	pylab.xlabel('Time (s)')
-	pylab.xlim(-0.5, 0.5)
+pylab.subplot(1,2,2)
+pylab.plot(t-T/2, h)       #Optimal Filter in time domain
+pylab.title('Optimal Filter (Time Domain)')
+pylab.xlabel('Time (s)')
+pylab.xlim(-0.5, 0.5)
 
+if not h_only:
 	pylab.figure(4)
 	pylab.plot(freq, np.abs(R))   #Spikes in freq Domain
 	pylab.xlabel('Freq(rad)')
@@ -130,10 +131,7 @@ if not h_only:
 	pylab.xlabel('Freq(rad)')
 	pylab.ylabel('$|XHAT(\omega|$')
 	pylab.title('XHAT Response Spectrum')
-	pylab.xlim(-10, 10)
 
-
-if not h_only:
 	pylab.figure(3)
 	pylab.plot(t, r, color='k', label='Neural Spikes', alpha=0.2)  #Plot of neural spikes
 	pylab.plot(t, x, linewidth=2, label='Signal (x)')           #Original white signal
