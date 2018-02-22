@@ -10,6 +10,9 @@ def two_neurons(x, dt, alpha, Jbias, tau_rc, tau_ref):
     voltages2, spikes2 = neuron2.voltageBuildup(x, dt)
     return (spikes1, spikes2)
 
+def rms(signal):
+	return np.sqrt(np.mean(np.square(signal)))
+
 T = 4.0         # length of signal in seconds
 dt = 0.001      # time step size
 limit = int(sys.argv[1])
@@ -72,7 +75,7 @@ h = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(H))).real  #Optimal filter, in 
 XHAT = H*R                            #Decoded x, in freq domain
 
 xhat = np.fft.ifft(np.fft.ifftshift(XHAT)).real  #Decoded x
-
+xhat = xhat*(rms(x)/rms(xhat)) #normalize
 
 import pylab
 
@@ -80,38 +83,62 @@ if not h_only:
 
 	pylab.figure(1)
 	pylab.subplot(1,2,1)
-	pylab.plot(freq, np.sqrt(XP), label='|X(W)| Squared')  #Squared x in freq domain 
+	pylab.plot(freq, np.sqrt(XP))  #Squared X in freq domain 
 	pylab.legend()
+	pylab.title('Square Magnitude of X')
 	pylab.xlabel('Freq(rad)')
-	pylab.ylabel('Amplitude')
+	pylab.ylabel('$|X(\omega)|^2$')
 	pylab.xlim(-20, 20)
 
 	pylab.subplot(1,2,2)
-	pylab.plot(freq, np.sqrt(RP), label='|R(w)|')  #Response spikes 
+	pylab.plot(freq, np.sqrt(RP))  #Response spikes in freq domain
 	pylab.legend()
+	pylab.title('Square Magnitude of Spike Spectrum')
 	pylab.xlabel('Freq(rad)')
-	pylab.ylabel('Activity')
+	pylab.ylabel('$|R(\omega)|^2$')
 
 
 	pylab.figure(2)
 	pylab.subplot(1,2,1)
 	pylab.plot(freq, H.real)   #Optimal filter in freq domain
 	pylab.xlabel('Freq(rad)')
-	pylab.title('Optimal Filter')
+	pylab.title('Optimal Filter (Freq Domain)')
 	pylab.xlim(-50, 50)
+	
+	pylab.subplot(1,2,2)
+	pylab.plot(t-T/2, h)       #Optimal Filter in time domain
+	pylab.title('Optimal Filter (Time Domain)')
+	pylab.xlabel('Time (s)')
+	pylab.xlim(-0.5, 0.5)
 
-pylab.subplot(1,2,2)
-pylab.plot(t-T/2, h)       #Optimal FIlter in time domain
-pylab.title('Optimal Filter')
-pylab.xlabel('Time (s)')
-pylab.xlim(-0.5, 0.5)
+	pylab.figure(4)
+	pylab.plot(freq, np.abs(R))   #Spikes in freq Domain
+	pylab.xlabel('Freq(rad)')
+	pylab.ylabel('$|R(\omega)|$')
+	pylab.title('Spike Response Spectrum')
+	# pylab.xlim(-100, 100)
+
+	pylab.figure(5)
+	pylab.plot(freq, np.abs(X))   #Spikes in freq Domain
+	pylab.xlabel('Freq(rad)')
+	pylab.ylabel('$|X(\omega|$')
+	pylab.title('X Response Spectrum')
+	pylab.xlim(-10, 10)
+
+	pylab.figure(6)
+	pylab.plot(freq, np.abs(XHAT))   #Spikes in freq Domain
+	pylab.xlabel('Freq(rad)')
+	pylab.ylabel('$|XHAT(\omega|$')
+	pylab.title('XHAT Response Spectrum')
+	pylab.xlim(-10, 10)
+
 
 if not h_only:
 	pylab.figure(3)
-	pylab.plot(t, r, color='k', label='Neural Spikes', alpha=0.2)  #
-	pylab.plot(t, x, linewidth=2, label='Signal (x)')           #
-	pylab.plot(t, xhat, label='Decoded Signal')                     #
-	pylab.title('???')
+	pylab.plot(t, r, color='k', label='Neural Spikes', alpha=0.2)  #Plot of neural spikes
+	pylab.plot(t, x, linewidth=2, label='Signal (x)')           #Original white signal
+	pylab.plot(t, xhat, label='Decoded Signal')                     #Approximated signal
+	pylab.title('Neural Spikes and Approximation of Signal')
 	pylab.legend(loc='best')
 	pylab.xlabel('Time (s)')
 
