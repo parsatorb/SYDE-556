@@ -21,9 +21,6 @@ class BaseNeuron:
 	Returns activity of neuron in hertz. 
 	"""
 	def tuningSimple(self, x):
-		#Yeah I know this is sloppy OOP, but I don't even know the final spec or scope of this library
-		#so Im leaving it flexible for now. 
-		#TODO: Make this less slop city
 		return self.model(self.current(x))
 
 	#Define in subclass

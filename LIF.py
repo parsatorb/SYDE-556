@@ -40,7 +40,45 @@ class LIF(BaseNeuron):
 		self._gain = (1 - 1. / (1 - c))/k
 		self._bias = 1 - (self._gain * np.dot(xInt, self._e))
 
+	"""
+	Set gain and bias based on resting and stimulated frequencies in Hz
+	"""
+	def setParams(self, resting, stim):
+		a = self._tRef
+		b = self._tRC
+		self._bias = 1./(1 - np.exp((resting*a - 1)/(resting*b)))
+		self._gain = (1./(1 - np.exp((stim*a - 1.)/(stim*b))) - self._bias)
 
+
+	"""
+	x is array-like representing the signal over time
+	step is the constant time step between each value in the x array
+	init_cond is the initial voltage level, assumed 0 usually
+	"""
+	def voltageBuildup(self, x, step, init_cond=0):
+		spikes = np.zeros(len(x))
+		voltage = np.zeros(len(x))
+		voltage[0] = init_cond
+		refractory_period = int(self._tRef//step)
+		i = 0
+		while i < len(voltage)-1:
+			if voltage[i] < 0:
+				voltage[i] = 0
+
+			if voltage[i] >= 1:
+				lower = i+1
+				upper = lower + refractory_period - 1
+				voltage[lower:upper] = [0] * (upper-lower)
+				spikes[i+1] = 1
+				i = upper
+			else:
+				J = self.current(x[i])
+				v_change = step*(1./self._tRC)*(J - voltage[i])
+				voltage[i+1] = voltage[i] + v_change
+				i += 1
+				
+
+		return (spikes, voltage)
 
 
 
