@@ -1,4 +1,5 @@
 import numpy as np
+import nengo
 
 def generate_signal(T, dt, rms, limit, seed=None, gaussian=False):
     b = 2*np.pi*limit
@@ -42,57 +43,66 @@ def generate_signal(T, dt, rms, limit, seed=None, gaussian=False):
 
 
 def scale(f, desired_rms):
-	rms = np.sqrt(np.mean(np.square(f.real)))
+	rms = np.sqrt(np.mean(np.square(f[np.where(f > 0)].real)))
 	scaling = desired_rms/rms
 	f = np.multiply(f, scaling)	
 	return f
 
-#TODO: Delete this
-def generate_signal_old(T, dt, rms, limit, seed=None):
-	if seed is None: 
-		np.random.seed(None)
-	else: 
-		np.random.seed(seed)
+def _filter(n, tau):
+    t_h = (np.arange(200)*dt)-0.1
+    h = np.power(t_h, n)*np.exp(-t_h/tau)
+    h[np.where(t_h<0)]=0
+    h = h/norm(h,1)
+    return (t_h, h)
 
 
-	t = np.arange(0, T-dt, dt)
-	w = np.arange(0, T-dt, dt)-(T/2)
-	a = np.zeros(len(t), dtype=complex)
-	X = np.zeros(len(w))
 
-	step = 2*np.pi/T;
-	steps = int(np.ceil(2*np.pi*limit/step))
-	
-	freqRange = np.arange(0, 2*np.pi*limit, step)
-	reals = np.random.rand(steps)
-	reals[0] = 0
-	realsReversed = reals[::-1]
-	realsReversed = realsReversed[:-1].copy()
-	
-	imag = np.random.rand(steps) - 0.5
-	imag = np.multiply(imag, np.complex(0,1))
-	imag[0] = 0
-	imagReversed = np.multiply(imag[::-1], -1)
-	imagReversed = imagReversed[:-1].copy()
+def compute_lif_decoder(n_neurons, dimensions, encoders, max_rates, intercepts, tau_ref, tau_rc, radius, x_pts, function):
+    """
+    Parameters:
+        n_neurons: number of neurons (integer)
+        dimensions: number of dimensions (integer)
+        encoders: the encoders for the neurons (array of shape (n_neurons, dimensions))
+        max_rates: the maximum firing rate for each neuron (array of shape (n_neurons))
+        intercepts: the x-intercept for each neuron (array of shape (n_neurons))
+        tau_ref: refractory period for the neurons (float)
+        tau_rc: membrane time constant for the neurons (float)
+        radius: the range of values the neurons are optimized over (float)
+        x_pts: the x-values to use to solve for the decoders (array of shape (S, dimensions))
+        function: the function to approximate
+    Returns:
+        A (the tuning curve matrix)
+        dec (the decoders)
+    """
+    model = nengo.Network()
+    with model:
+        ens = nengo.Ensemble(n_neurons=n_neurons, dimensions=dimensions, encoders=encoders, max_rates=max_rates, intercepts=[x/radius for x in intercepts], neuron_type=nengo.LIF(tau_rc=tau_rc, tau_ref=tau_ref),radius=radius)
+    sim = nengo.Simulator(model)
+    
+    x_pts = np.array(x_pts)
+    if len(x_pts.shape) == 1:
+        x_pts.shape = x_pts.shape[0], 1
+    _, A = nengo.utils.ensemble.tuning_curves(ens, sim, inputs=x_pts)
+    
+    target = [function(xx) for xx in x_pts]
+    solver = nengo.solvers.LstsqL2()
+    dec, info = solver(A, target)
+    return A, dec
 
-	a[0:len(reals)] = np.add(reals, imag)
-	a[-len(realsReversed):] = np.add(realsReversed, imagReversed)
+#convienence method
+def compute_decoders(N, max_rates, x, dimensions=1, tau_ref=0.002, tau_rc=0.02, radius=1, function=lambda t: t):
+	if dimensions==1:
+		es = np.random.choice([-1, 1], size=(N, 1))
+	elif dimensions==2:
+		angles = np.random.uniform(0, 2*np.pi, N)
+		es = np.array([np.cos(angles), np.sin(angles)]).transpose()
+
+	max_rates = np.random.uniform(max_rates[0], max_rates[1], N)
+	xInts = np.random.uniform(-1*radius, 1*radius, N)
+
+	return compute_lif_decoder(n_neurons=N, dimensions=dimensions, encoders=es, max_rates=max_rates, intercepts=xInts, tau_ref=tau_ref, tau_rc=tau_rc, radius=radius, x_pts=x, function=function)
 
 
-	timeSignal = np.fft.ifft(a)
-	timeSignal = scale(timeSignal, rms)
 
-	#making them symmetrical so that time signal is purely real
-	reals = np.append(realsReversed, reals)
-	imag = np.append(imagReversed, imag)
-	freqRange = np.append(np.multiply(freqRange[::-1], -1), freqRange[1:])
 
-	freqSignal = np.add(reals, imag)
-	freqSignal = scale(freqSignal, rms)
-	
-	diff = len(w) - len(freqSignal)
-	padding = np.zeros(int(diff/2))
-	freqSignal = np.append(padding, freqSignal)
-	freqSignal = np.append(freqSignal, padding)
 
-	return ((t, timeSignal), (w, freqSignal))

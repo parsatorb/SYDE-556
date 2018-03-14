@@ -74,5 +74,22 @@ class BaseNeuron:
 		# D = np.dot(np.linalg.inv(np.dot(A_t, A)), np.dot(A_t, X))
 		# return D
 
+	"""
+	Decode Ideal (assuming no noise)
+	@param A: The neuron activity being decoded, must be array or numpy array.
+	@param X: The original vector.
+	@param sigma: Standard deviation of the noise
+	@param s: Sample steps
+	Returns decoders array D.
+	"""
+	@classmethod
+	def decodeSpiking(cls, A, X, dt, sigma=0):
+		A = np.array(A)
+		A_t = A.transpose()
+		S = np.size(X)
+		num_neurons = len(A[1,:])
+		gamma = ( np.divide((np.dot(A_t, A)), S) + (sigma*sigma)*(np.identity(num_neurons)) )
+		D = np.dot(np.linalg.inv(gamma), np.divide(np.dot(A_t, X), S))
+		return D
 
 

@@ -34,11 +34,19 @@ class LIF(BaseNeuron):
 	Set gain and bias for a max point xMax, aMax, and an 'x-int'.
 	aMax must be scalar. All other inputs must be array_like of the same dimension 
 	"""
-	def setParams(self, xMax, aMax, xInt):
+	def setParamsMax (self, xMax, aMax, xInt):
 		c = np.exp( (self._tRef - (1. / aMax)) / self._tRC ) #just some constant to make the math nicer
-		k = np.dot(xInt, self._e) - 1	#some other constant
+		k = np.dot(xInt/(np.abs(xMax)), self._e) - 1	#some other constant
 		self._gain = (1 - 1. / (1 - c))/k
-		self._bias = 1 - (self._gain * np.dot(xInt, self._e))
+		self._bias = 1 - (self._gain * np.dot(xInt/(np.abs(xMax)), self._e))
+		
+		# self._gain = (1 + xInt) / np.dot(self._e, xInt)
+		# self._bias = (1. / ( 1 - np.exp((aMax*self._tRef - 1)/(aMax*self._tRC)) )) - self._gain*np.dot(self._e, xMax)
+
+		# x = 1. / (1 - np.exp((self._tRef - (1. / aMax)) / self._tRC))
+		# self._gain = (1 - x) / (xInt - 1)
+		# self._bias = 1 - (self._gain * xInt)
+		
 
 	"""
 	Set gain and bias based on resting and stimulated frequencies in Hz
